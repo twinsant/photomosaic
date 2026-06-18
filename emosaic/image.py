@@ -60,7 +60,10 @@ class Image(object):
             pass
         
     def load_image(self):
-        return cv2.imread(self.path)  #, cv2.COLOR_BGR2Lab)
+        img = cv2.imread(self.path)
+        if img is None:
+            img = cv2.imdecode(np.fromfile(self.path, dtype=np.uint8), cv2.IMREAD_COLOR)
+        return img  #, cv2.COLOR_BGR2Lab)
     
     def show_dominant_colors(self, img=None, dominant_color_width=300):
         img = self.load_image() if img is None else img
@@ -131,6 +134,8 @@ class Image(object):
         
     def compute_statistics(self):
         img = self.load_image()
+        if img is None:
+            raise ValueError(f"Failed to load image: {self.path}")
         
         # get shape & size
         self.shape = img.shape

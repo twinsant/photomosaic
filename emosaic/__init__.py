@@ -52,13 +52,29 @@ def mosaicify(
                 else:
                     if uniform_k:
                         dist, I = tile_index.search(v, k=best_k)
-                        idx = random.choice(I[0])
+                        candidates = I[0]
+                        if no_duplicates:
+                            unused = [c for c in candidates if c not in seen_idx]
+                            if unused:
+                                idx = random.choice(unused)
+                            else:
+                                idx = random.choice(candidates)
+                        else:
+                            idx = random.choice(candidates)
                     else:
                         dist, I = tile_index.search(v, k=best_k + 1)
                         distances = dist[0]
                         deviation_from_max = np.abs(distances - distances.max())
                         weighting = deviation_from_max / deviation_from_max.sum()
-                        idx = np.random.choice(I[0], p=weighting)
+                        candidates = I[0]
+                        if no_duplicates:
+                            unused = [c for c in candidates if c not in seen_idx]
+                            if unused:
+                                idx = np.random.choice(unused)
+                            else:
+                                idx = np.random.choice(candidates, p=weighting)
+                        else:
+                            idx = np.random.choice(candidates, p=weighting)
                 closest_tile = tile_images[idx]
             except Exception:
                 import ipdb; ipdb.set_trace()
@@ -80,10 +96,15 @@ def mosaicify(
                 mosaic[x : x + tile_h, y : y + tile_w] = tile_images[rand_idx]
             else:
                 if use_stabilization:
-                    if dist < last_dist[x, y] * stabilization_threshold:
+                    if best_k == 1:
+                        d = dist[0][0] if hasattr(dist, 'shape') else dist
+                    else:
+                        d = dist[0][0]
+                    if d < last_dist[x, y] * stabilization_threshold:
                         mosaic[x : x + tile_h, y : y + tile_w] = closest_tile
                 else:
                     mosaic[x : x + tile_h, y : y + tile_w] = closest_tile
+                seen_idx.add(idx)
 
             # set new last dist
             if use_stabilization:

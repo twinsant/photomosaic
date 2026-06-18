@@ -49,13 +49,16 @@ def load_and_vectorize_image(args):
       the argument aspect_ratio given
   """
   path, h, w, c, aspect_ratio, use_detect_faces = args
-  image = Image(path, detect_faces=use_detect_faces)
-  img = image.compute_statistics()
-  if image.aspect_ratio == aspect_ratio:
+  try:
+    image = Image(path, detect_faces=use_detect_faces)
+    img = image.compute_statistics()
+  except Exception:
+    return 'load_error', None
+  if abs(image.aspect_ratio - aspect_ratio) < 0.05:
     v = to_vector(img, h, w, c)
     return image, v
   else:
-    return None, None
+    return 'aspect_mismatch', None
 
 def divide_image(img, pixels):
   """
@@ -175,10 +178,5 @@ def to_vector(img, h, w, c=3):
   
   @return: np.float32 array of shape: (-1, h * w * c)
   """
-  img_h, img_w, _ = img.shape
-  resized = cv2.resize(
-    img, None,
-    fx=h / float(img_h),
-    fy=w / float(img_w),
-    interpolation=cv2.INTER_AREA)
+  resized = cv2.resize(img, (w, h), interpolation=cv2.INTER_AREA)
   return resized.reshape(-1, h * w * c).astype(np.float32)

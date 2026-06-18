@@ -54,6 +54,8 @@ aspect_ratio = height / float(width)
 
 # get target image
 target_image = cv2.imread(args.target)
+if target_image is None:
+    target_image = cv2.imdecode(np.fromfile(args.target, dtype=np.uint8), cv2.IMREAD_COLOR)
 
 # index all those images
 tile_index, _, tile_images = index_images(
@@ -91,5 +93,12 @@ except:
 filename = os.path.basename(args.target).split('.')[0]
 savepath = args.savepath % (filename, args.scale)
 print("Writing mosaic image to '%s' ..." % savepath)
-cv2.imwrite(savepath, mosaic_img)
+ext = os.path.splitext(savepath)[1].lower()
+if ext in ['.jpg', '.jpeg']:
+    _, buf = cv2.imencode('.jpg', mosaic_img)
+elif ext == '.png':
+    _, buf = cv2.imencode('.png', mosaic_img)
+else:
+    _, buf = cv2.imencode('.jpg', mosaic_img)
+buf.tofile(savepath)
 

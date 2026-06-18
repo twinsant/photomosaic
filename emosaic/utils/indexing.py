@@ -136,7 +136,15 @@ def index_images(
         # get the results, store in ordered (indexed) list
         images = []
         vectors = []
+        load_errors = 0
+        aspect_mismatches = 0
         for image, vector in results:
+            if image == 'load_error':
+                load_errors += 1
+                continue
+            if image == 'aspect_mismatch':
+                aspect_mismatches += 1
+                continue
             if image is not None and vector is not None:
                 if use_detect_faces and not image.faces:
                     # if we're told to use faces, skip any images
@@ -144,6 +152,10 @@ def index_images(
                     continue
                 vectors.append(vector)
                 images.append(image)
+        
+        if verbose:
+            print("Skipped: %d load errors, %d aspect mismatches" % (
+                load_errors, aspect_mismatches))
 
         if use_detect_faces:
             print("Using only images with faces: total=%d, withfaces=%d" % (
@@ -163,13 +175,7 @@ def index_images(
         tile_images = []
         for image in images:
             img = image.load_image()
-            img_h, img_w, _ = img.shape
-            tile = cv2.resize(
-                img,
-                None,
-                fx=height / float(img_h),
-                fy=width / float(img_w),
-                interpolation=cv2.INTER_AREA)
+            tile = cv2.resize(img, (width, height), interpolation=cv2.INTER_AREA)
             tile_images.append(tile)
 
         if caching:
